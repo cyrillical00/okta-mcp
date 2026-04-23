@@ -2,14 +2,6 @@
 
 MCP server for Okta IT operations. Okta ships an official MCP server for developers. This one is for IT operators, with incident-derived runbook tools built from real production incidents.
 
-## Why this exists
-
-The Device Trust lockout: 50 Windows users blocked on a Monday morning. An Intune update ring had not pushed build 26200 before an Okta Sign-On Policy enforcement rule went live. The policy was set to deny, users were locked out immediately.
-
-The fix involved creating a bypass group, adding affected users to it, standing up a new Intune update ring targeted at those devices, and writing API automation to remove users from the bypass group as their machines updated. The whole sequence had to be executed under pressure with no good tooling for inspecting the current state of who was in what group, which devices were managed, and what the policy actually said.
-
-This server is the tooling that would have made that incident shorter. Every runbook tool maps directly to a real operational scenario.
-
 ## Tools
 
 ### Read tools
