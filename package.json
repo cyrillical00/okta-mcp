@@ -1,0 +1,35 @@
+{
+  "name": "okta-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Okta IT operations",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "verify-auth": "tsx scripts/verify-auth.ts",
+    "probe-sdk": "tsx scripts/probe-sdk-methods.ts",
+    "generate-config": "tsx scripts/generate-claude-config.ts",
+    "test:manual": "tsx test/manual/test-each-tool.ts",
+    "inspector": "npx @modelcontextprotocol/inspector tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@okta/okta-sdk-nodejs": "^8.0.0",
+    "dotenv": "^16.4.0",
+    "pino": "^9.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/inspector": "latest",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

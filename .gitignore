@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+keys/*.json
+keys/*.pem
+logs/*.jsonl
+*.log
+.DS_Store
+Thumbs.db
