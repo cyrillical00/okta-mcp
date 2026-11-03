@@ -80,7 +80,7 @@ export function register(server: McpServer): void {
     inputSchema: z.object({
       userId: z.string().min(1),
       appId: AppId,
-      profile: z.record(z.unknown()).optional(),
+      profile: z.record(z.string(), z.unknown()).optional(),
       _confirmed: z.boolean().optional(),
     }),
   }, async ({ userId, appId, profile, _confirmed }) => {
