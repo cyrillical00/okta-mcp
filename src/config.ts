@@ -10,6 +10,7 @@ const ConfigSchema = z.object({
   OKTA_MCP_MAX_PAGE_SIZE: z.coerce.number().int().min(1).max(200).default(200),
   OKTA_MCP_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
   OKTA_MCP_ALLOW_WRITES: z.enum(['true', 'false']).default('true'),
+  OKTA_MCP_ALLOW_MODEL_CONFIRM: z.enum(['true', 'false']).default('false'),
   OKTA_MCP_AUDIT_DIR: z.string().default('./logs'),
 });
 
@@ -41,6 +42,7 @@ function loadConfig() {
       maxPageSize: c.OKTA_MCP_MAX_PAGE_SIZE,
       requestTimeoutMs: c.OKTA_MCP_REQUEST_TIMEOUT_MS,
       allowWrites: c.OKTA_MCP_ALLOW_WRITES === 'true',
+      allowModelConfirm: c.OKTA_MCP_ALLOW_MODEL_CONFIRM === 'true',
       auditDir: c.OKTA_MCP_AUDIT_DIR,
     },
   };

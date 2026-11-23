@@ -61,6 +61,8 @@ In the Okta Admin Console:
 5. Okta API Scopes tab > grant all 12 scopes listed in `.env.example`
 6. Security > Administrators > Add administrator > select the service app > Super Administrator
 
+> Super Administrator is the quickest setup and the broadest grant: anything that can drive this server can then act as a super admin. For read-only use, grant only the `*.read` scopes, assign Read-Only Administrator instead, and set `OKTA_MCP_ALLOW_WRITES=false`. For write use, prefer a custom admin role limited to the user, group and app operations you actually need.
+
 ### 2. Configure environment
 
 ```
@@ -98,9 +100,9 @@ Config file location:
 
 - **Auth**: Private Key JWT (PKJWT) via Okta service app. No API tokens, no user credentials.
 - **Scopes**: Minimal set of `okta.*` admin scopes, granted explicitly per section above.
-- **Write gating**: All destructive operations require confirmation via MCP Elicitation API before executing. Clients without elicitation support get a `CONFIRMATION_REQUIRED` error on first call and must re-invoke with `_confirmed: true`.
+- **Write gating**: All destructive operations require a human confirmation through the MCP Elicitation API before executing. A client that does not declare elicitation support gets `CONFIRMATION_UNAVAILABLE` and nothing is changed. Setting `OKTA_MCP_ALLOW_MODEL_CONFIRM=true` lets such a client confirm with `_confirmed: true` instead. The model fills that argument in itself, so text it reads from Okta (a user profile, a log line) could talk it into confirming. Enable it only for supervised sessions.
 - **Audit log**: Every tool invocation appended to `logs/okta-mcp-audit-YYYY-MM-DD.jsonl` with input (redacted), output summary, duration, and Okta request ID.
-- **Demo mode**: Set `OKTA_MCP_ALLOW_WRITES=false` to disable all write operations.
+- **Demo mode**: Set `OKTA_MCP_ALLOW_WRITES=false` to disable all write operations. Every write tool then returns `WRITES_DISABLED` before contacting Okta.
 - **Key protection**: Private key never leaves the local filesystem. `.gitignore` blocks `keys/*.json` and `keys/*.pem`.
 
 ## Architecture

@@ -27,6 +27,7 @@ const config = {
       OKTA_SCOPES: process.env.OKTA_SCOPES ?? '',
       OKTA_MCP_LOG_LEVEL: process.env.OKTA_MCP_LOG_LEVEL ?? 'info',
       OKTA_MCP_ALLOW_WRITES: process.env.OKTA_MCP_ALLOW_WRITES ?? 'true',
+      OKTA_MCP_ALLOW_MODEL_CONFIRM: process.env.OKTA_MCP_ALLOW_MODEL_CONFIRM ?? 'false',
       OKTA_MCP_AUDIT_DIR: join(projectRoot, 'logs').replace(/\\/g, '/'),
     },
   },
