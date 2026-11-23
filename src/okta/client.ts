@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
 import type { Client as OktaClientType } from '@okta/okta-sdk-nodejs';
 import { getConfig } from '../config.js';
+import { loadPrivateKey } from './privateKey.js';
 
 const _require = createRequire(import.meta.url);
 const { Client, DefaultRequestExecutor } = _require('@okta/okta-sdk-nodejs') as {
@@ -15,7 +15,7 @@ export function getOktaClient(): OktaClientType {
   if (_client) return _client;
 
   const config = getConfig();
-  const privateKey = JSON.parse(readFileSync(config.okta.privateKeyPath, 'utf-8')) as Record<string, unknown>;
+  const privateKey = loadPrivateKey(config.okta.privateKeyPath);
 
   _client = new Client({
     orgUrl: config.okta.orgUrl,

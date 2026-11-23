@@ -72,7 +72,7 @@ cp .env.example .env
 Fill in:
 - `OKTA_DOMAIN` - your org domain, no scheme (e.g. `mycompany.okta.com`)
 - `OKTA_CLIENT_ID` - from the app's General tab
-- `OKTA_PRIVATE_KEY_PATH` - absolute path to the JWK JSON you downloaded
+- `OKTA_PRIVATE_KEY_PATH` - absolute path to the JWK JSON you downloaded. On macOS and Linux run `chmod 600` on it; the server refuses to start if other accounts can read the file
 - `OKTA_SCOPES` - copy as-is from `.env.example`
 
 ### 3. Install and verify
@@ -103,7 +103,7 @@ Config file location:
 - **Write gating**: All destructive operations require a human confirmation through the MCP Elicitation API before executing. A client that does not declare elicitation support gets `CONFIRMATION_UNAVAILABLE` and nothing is changed. Setting `OKTA_MCP_ALLOW_MODEL_CONFIRM=true` lets such a client confirm with `_confirmed: true` instead. The model fills that argument in itself, so text it reads from Okta (a user profile, a log line) could talk it into confirming. Enable it only for supervised sessions.
 - **Audit log**: Every tool invocation appended to `logs/okta-mcp-audit-YYYY-MM-DD.jsonl` with input (redacted), output summary, duration, and Okta request ID.
 - **Demo mode**: Set `OKTA_MCP_ALLOW_WRITES=false` to disable all write operations. Every write tool then returns `WRITES_DISABLED` before contacting Okta.
-- **Key protection**: Private key never leaves the local filesystem. `.gitignore` blocks `keys/*.json` and `keys/*.pem`.
+- **Key protection**: Private key never leaves the local filesystem. `.gitignore` blocks `keys/*.json` and `keys/*.pem`. The key is stored unencrypted, so anyone who can read the file can act as the service app. On macOS and Linux the server exits with `KEY_INVALID` when the file is readable or writable by group or others; on Windows that check does not run, so keep the file inside your user profile. Treat a copied key file as compromised and replace the key in the Okta Admin Console.
 
 ## Architecture
 

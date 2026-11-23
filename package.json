@@ -18,7 +18,7 @@
     "inspector": "npx @modelcontextprotocol/inspector tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "tsx --test test/write-gate.test.ts"
+    "test": "tsx --test test/write-gate.test.ts test/private-key.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { getConfig } from '../config.js';
 import { getOktaClient } from './client.js';
 import logger from '../logger.js';
@@ -16,27 +15,11 @@ export function getOrgState(): OrgState {
   return _orgState;
 }
 
-function validatePrivateKey(path: string): void {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(readFileSync(path, 'utf-8'));
-  } catch {
-    throw Object.assign(new Error(`Cannot read private key at ${path}`), { code: 'KEY_INVALID' });
-  }
-  const key = parsed as Record<string, unknown>;
-  if (!key.kty || !key.kid) {
-    throw Object.assign(
-      new Error('Private key JSON is missing required fields: kty and/or kid'),
-      { code: 'KEY_INVALID' }
-    );
-  }
-}
-
 export async function runStartupProbe(): Promise<void> {
   const config = getConfig();
 
-  validatePrivateKey(config.okta.privateKeyPath);
-
+  // Loads the private key first and throws KEY_INVALID when the file is
+  // unreadable, malformed, or accessible to other local users.
   const client = getOktaClient();
 
   // Trigger the token exchange by making a real API call with a granted scope.
