@@ -14,6 +14,15 @@ const ConfigSchema = z.object({
   OKTA_MCP_AUDIT_DIR: z.string().default('./logs'),
 });
 
+/**
+ * Scopes to request in the access token. A read-only server has no use for
+ * the `*.manage` scopes, so they are left out of the token request even when
+ * OKTA_SCOPES still lists them and the service app has been granted them.
+ */
+export function effectiveScopes(scopes: string[], allowWrites: boolean): string[] {
+  return allowWrites ? scopes : scopes.filter(scope => !scope.endsWith('.manage'));
+}
+
 function loadConfig() {
   const result = ConfigSchema.safeParse(process.env);
   if (!result.success) {
@@ -35,7 +44,7 @@ function loadConfig() {
       orgUrl: `https://${c.OKTA_DOMAIN}`,
       clientId: c.OKTA_CLIENT_ID,
       privateKeyPath: c.OKTA_PRIVATE_KEY_PATH,
-      scopes: c.OKTA_SCOPES.split(' ').filter(Boolean),
+      scopes: effectiveScopes(c.OKTA_SCOPES.split(' ').filter(Boolean), c.OKTA_MCP_ALLOW_WRITES === 'true'),
     },
     server: {
       logLevel: c.OKTA_MCP_LOG_LEVEL,

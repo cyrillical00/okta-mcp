@@ -47,11 +47,20 @@ export async function runStartupProbe(): Promise<void> {
     const res = await (client.roleAssignmentApi as unknown as {
       listRolesForClient: (opts: { clientId: string }) => Promise<AsyncIterator<{ type?: string; label?: string }>>;
     }).listRolesForClient({ clientId: config.okta.clientId });
-    const page = await res.next();
-    const roleObj = page.value as { type?: string; label?: string } | undefined;
-    if (roleObj) roles.push(roleObj.type ?? roleObj.label ?? 'assigned');
+    for (let page = await res.next(); page.value; page = await res.next()) {
+      const roleObj = page.value as { type?: string; label?: string };
+      roles.push(roleObj.type ?? roleObj.label ?? 'assigned');
+    }
   } catch {
     logger.warn('Could not verify admin role assignment; continuing');
+  }
+
+  if (roles.includes('SUPER_ADMIN')) {
+    logger.warn(
+      { event: 'super_admin_role' },
+      'The service app holds Super Administrator, which is more than any tool here needs. ' +
+        'Assign a narrower admin role (see "Choose an access profile" in the README).'
+    );
   }
 
   _orgState = { orgId: config.okta.clientId, pipeline: 'v2', roles };

@@ -48,7 +48,7 @@ MCP server for Okta IT operations. Okta ships an official MCP server for develop
 
 - Node.js 20+
 - Claude Desktop
-- Okta org with Super Admin access
+- An Okta admin account that can create an API Services app and assign it an admin role. The service app itself does not need Super Administrator
 
 ### 1. Create the Okta service app
 
@@ -58,10 +58,21 @@ In the Okta Admin Console:
 2. Name it anything (e.g. `okta-mcp-server`), Save
 3. General tab > Client Credentials > Edit > select **Public key / Private key** > Save
 4. Public Keys > Add key > Generate new key > JWK tab > copy the JSON > Done
-5. Okta API Scopes tab > grant all 12 scopes listed in `.env.example`
-6. Security > Administrators > Add administrator > select the service app > Super Administrator
+5. Okta API Scopes tab > grant only the scopes for the profile you choose below
+6. Security > Administrators > Add administrator > select the service app > assign the role for that profile
 
-> Super Administrator is the quickest setup and the broadest grant: anything that can drive this server can then act as a super admin. For read-only use, grant only the `*.read` scopes, assign Read-Only Administrator instead, and set `OKTA_MCP_ALLOW_WRITES=false`. For write use, prefer a custom admin role limited to the user, group and app operations you actually need.
+#### Choose an access profile
+
+Whatever can drive this server, including text the model reads back from Okta, acts with the service app's scopes and admin role. Grant the smallest profile that covers what you will use.
+
+| Profile | Scopes to grant | Admin role | `OKTA_MCP_ALLOW_WRITES` |
+|---|---|---|---|
+| Read-only (start here) | `okta.users.read okta.groups.read okta.apps.read okta.logs.read okta.policies.read okta.factors.read okta.roles.read okta.devices.read` | Read-Only Administrator | `false` |
+| Read and write | The read scopes plus only the `*.manage` scopes for the write tools you need: `okta.users.manage` (user lifecycle, sessions, offboarding), `okta.factors.manage` (factor reset), `okta.groups.manage` (group membership), `okta.apps.manage` (app assignment) | Read-Only Administrator for the read tools, plus a custom admin role that holds only the lifecycle, factor-reset, membership and assignment permissions you need, bound to a resource set of the users, groups and apps it may touch | `true` |
+
+Do not assign Super Administrator. No tool here requires it. Combined with the `*.manage` scopes it lets the server deactivate, or reset MFA for, any account in the org, administrators included, so a leaked key file or a successful prompt injection reaches the whole org. The server logs a warning at startup when it finds that role on the service app.
+
+With `OKTA_MCP_ALLOW_WRITES=false` the server also leaves every `*.manage` scope out of its token request, so the access token cannot change anything even if the app was granted more.
 
 ### 2. Configure environment
 
@@ -73,7 +84,8 @@ Fill in:
 - `OKTA_DOMAIN` - your org domain, no scheme (e.g. `mycompany.okta.com`)
 - `OKTA_CLIENT_ID` - from the app's General tab
 - `OKTA_PRIVATE_KEY_PATH` - absolute path to the JWK JSON you downloaded. On macOS and Linux run `chmod 600` on it; the server refuses to start if other accounts can read the file
-- `OKTA_SCOPES` - copy as-is from `.env.example`
+- `OKTA_SCOPES` - the scopes for your profile; `.env.example` has both lists
+- `OKTA_MCP_ALLOW_WRITES` - `false` for the read-only profile
 
 ### 3. Install and verify
 
@@ -99,7 +111,7 @@ Config file location:
 ## Security model
 
 - **Auth**: Private Key JWT (PKJWT) via Okta service app. No API tokens, no user credentials.
-- **Scopes**: Minimal set of `okta.*` admin scopes, granted explicitly per section above.
+- **Scopes**: The access token carries only the scopes in `OKTA_SCOPES`, and no `*.manage` scope when writes are disabled. The read-only profile is 8 read scopes; the full list of 12 includes 4 `*.manage` scopes that can deactivate users, reset MFA factors and change group and app access, so grant those only for the write tools you use. See "Choose an access profile".
 - **Write gating**: All destructive operations require a human confirmation through the MCP Elicitation API before executing. A client that does not declare elicitation support gets `CONFIRMATION_UNAVAILABLE` and nothing is changed. Setting `OKTA_MCP_ALLOW_MODEL_CONFIRM=true` lets such a client confirm with `_confirmed: true` instead. The model fills that argument in itself, so text it reads from Okta (a user profile, a log line) could talk it into confirming. Enable it only for supervised sessions.
 - **Audit log**: Every tool invocation appended to `logs/okta-mcp-audit-YYYY-MM-DD.jsonl` with input (redacted), output summary, duration, and Okta request ID.
 - **Demo mode**: Set `OKTA_MCP_ALLOW_WRITES=false` to disable all write operations. Every write tool then returns `WRITES_DISABLED` before contacting Okta.
