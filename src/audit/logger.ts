@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, chmodSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { getConfig } from '../config.js';
 import { redact } from '../okta/errors.js';
@@ -15,9 +15,23 @@ function auditPath(): string {
 
 function ensureDir(): void {
   try {
-    mkdirSync(getConfig().server.auditDir, { recursive: true });
+    mkdirSync(getConfig().server.auditDir, { recursive: true, mode: 0o700 });
   } catch {
     // ignore
+  }
+}
+
+// Entries hold user identifiers and the start of tool output (profile data),
+// so the file is kept readable by its owner only.
+let _ownerOnlyPath: string | null = null;
+
+function appendOwnerOnly(path: string, line: string): void {
+  appendFileSync(path, line, { encoding: 'utf-8', mode: 0o600 });
+  if (_ownerOnlyPath !== path) {
+    // The mode above only applies when the file is created; tighten a file
+    // left behind by an earlier version. No effect on Windows.
+    chmodSync(path, 0o600);
+    _ownerOnlyPath = path;
   }
 }
 
@@ -49,7 +63,7 @@ export function auditLog(entry: AuditEntry): void {
 
   try {
     ensureDir();
-    appendFileSync(auditPath(), line + '\n', 'utf-8');
+    appendOwnerOnly(auditPath(), line + '\n');
   } catch {
     _degraded = true;
     logger.warn({ audit: line }, 'audit log write failed, switching to stderr audit');
