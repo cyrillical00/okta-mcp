@@ -40,11 +40,15 @@ async function main() {
     { capabilities: { tools: {} } }
   );
 
-  // 4. Detect elicitation support and initialize
-  // elicitInput is available on server.server (the underlying Protocol instance)
-  const elicitationSupported = typeof (server.server as unknown as Record<string, unknown>).elicitInput === 'function';
-  initElicitation(server, elicitationSupported);
-  logger.info({ elicitationSupported }, 'Elicitation capability');
+  // 4. Initialize the write guard. Whether the client can show a confirmation
+  // prompt is read from its declared capabilities on each call, because those
+  // are only known after the MCP handshake.
+  const writeGuard = {
+    allowWrites: config.server.allowWrites,
+    allowModelConfirm: config.server.allowModelConfirm,
+  };
+  initElicitation(server, writeGuard);
+  logger.info(writeGuard, 'Write guard');
 
   // 5. Register all tools
   registerAllTools(server);

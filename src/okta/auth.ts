@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { getConfig } from '../config.js';
 import { getOktaClient } from './client.js';
 import logger from '../logger.js';
@@ -16,27 +15,11 @@ export function getOrgState(): OrgState {
   return _orgState;
 }
 
-function validatePrivateKey(path: string): void {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(readFileSync(path, 'utf-8'));
-  } catch {
-    throw Object.assign(new Error(`Cannot read private key at ${path}`), { code: 'KEY_INVALID' });
-  }
-  const key = parsed as Record<string, unknown>;
-  if (!key.kty || !key.kid) {
-    throw Object.assign(
-      new Error('Private key JSON is missing required fields: kty and/or kid'),
-      { code: 'KEY_INVALID' }
-    );
-  }
-}
-
 export async function runStartupProbe(): Promise<void> {
   const config = getConfig();
 
-  validatePrivateKey(config.okta.privateKeyPath);
-
+  // Loads the private key first and throws KEY_INVALID when the file is
+  // unreadable, malformed, or accessible to other local users.
   const client = getOktaClient();
 
   // Trigger the token exchange by making a real API call with a granted scope.
@@ -64,11 +47,20 @@ export async function runStartupProbe(): Promise<void> {
     const res = await (client.roleAssignmentApi as unknown as {
       listRolesForClient: (opts: { clientId: string }) => Promise<AsyncIterator<{ type?: string; label?: string }>>;
     }).listRolesForClient({ clientId: config.okta.clientId });
-    const page = await res.next();
-    const roleObj = page.value as { type?: string; label?: string } | undefined;
-    if (roleObj) roles.push(roleObj.type ?? roleObj.label ?? 'assigned');
+    for (let page = await res.next(); page.value; page = await res.next()) {
+      const roleObj = page.value as { type?: string; label?: string };
+      roles.push(roleObj.type ?? roleObj.label ?? 'assigned');
+    }
   } catch {
     logger.warn('Could not verify admin role assignment; continuing');
+  }
+
+  if (roles.includes('SUPER_ADMIN')) {
+    logger.warn(
+      { event: 'super_admin_role' },
+      'The service app holds Super Administrator, which is more than any tool here needs. ' +
+        'Assign a narrower admin role (see "Choose an access profile" in the README).'
+    );
   }
 
   _orgState = { orgId: config.okta.clientId, pipeline: 'v2', roles };
